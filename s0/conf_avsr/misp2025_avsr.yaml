@@ -1,0 +1,112 @@
+# network architecture
+# encoder related
+# 注意：speed_perturb设置为false。由于数据集中包含sp后的音频数据
+encoder: AVconformer
+encoder_conf:
+    v_num_blocks: 3
+    crossfusion_num_blocks: 12
+    output_size: &encoder_output_dim 512
+    attention_heads: 8
+    linear_units: 2048
+    dropout_rate: 0.1
+    positional_dropout_rate: 0.1
+    attention_dropout_rate: 0.1
+    input_layer_a: conv2d
+    input_layer_v: linear
+    normalize_before: true
+    src_first: true
+    macaron_style: true
+    rel_pos_type: 'latest'
+    pos_enc_layer_type: 'rel_pos'
+    selfattention_layer_type: 'rel_selfattn'
+    srcattention_layer_type: 'rel_selfattn'
+    activation_type: 'swish'
+    use_cnn_module: true
+    cnn_module_kernel: 15
+    
+# decoder
+decoder: bitransformer
+decoder_conf:
+  attention_heads: 8
+  dropout_rate: 0.1
+  linear_units: 2048
+  num_blocks: 3
+  positional_dropout_rate: 0.1
+  r_num_blocks: 3
+  self_attention_dropout_rate: 0.1
+  src_attention_dropout_rate: 0.1
+
+#frontend related
+videofront: conv3d+resnet18
+videofront_conf: 
+    random: True,
+    channel_input: bgr
+    size: [88,88] 
+    downsampling: False
+    hidden_channel_num: 64 
+    res_block_type: basic2d
+    res_layer_block_num: 2
+    res_hidden_channels: [ 64, 128, 256, 512 ]
+    res_stride: [ 1, 2, 2, 2 ]
+    res_act_type: prelu
+    res_downsample_type: avgpool
+
+#init model params
+ignore_init_mismatch: True 
+init_param: 
+    - /train33/sppro/permanent/hangchen2/pandora/egs/misp2024-mmmt-minggao/examples/misp2022/s0/exp/asr_near_wenetspeech/avg_10.pt
+    - /train33/sppro/permanent/hangchen2/pandora/egs/misp2024-mmmt-minggao/examples/misp2022/s0/exp_vsr/vsr/40.pt
+name_map: 
+    - {"encoder.encoders":"encoder.cross_fusion_encoderlayers"}
+    - {"video_frontend.resnet":"video_frontend.resnet",
+        "video_frontend.video_frontend":"video_frontend.video_frontend"}
+
+# hybrid CTC/attention
+model_conf:
+    ctc_weight: 0.3
+    lsm_weight: 0.1     # label smoothing option
+    length_normalized_loss: false
+    reverse_weight: 0.3
+
+dataset_conf:
+    filter_conf:
+        max_length: 40960
+        min_length: 0
+        token_max_length: 200
+        token_min_length: 1
+    resample_conf:
+        resample_rate: 16000
+    speed_perturb: true #false
+    fbank_conf:
+        num_mel_bins: 80
+        frame_shift: 10
+        frame_length: 25
+        dither: 0.1
+    spec_aug: true
+    spec_aug_conf:
+        num_t_mask: 2
+        num_f_mask: 2
+        max_t: 50 #40
+        max_f: 10
+    shuffle: true
+    shuffle_conf:
+        shuffle_size: 1500
+    sort: true
+    sort_conf:
+        sort_size: 500  # sort_size should be less than shuffle_size
+    batch_conf:
+        batch_type: 'static' # static or dynamic
+        batch_size: 2
+
+grad_clip: 5
+accum_grad: 4
+max_epoch: 80 #40
+log_interval: 1000
+
+optim: adam
+optim_conf:
+    lr: 0.0006
+output_dim: 5538
+scheduler: warmuplr     # pytorch v1.1.0+ required
+scheduler_conf:
+    warmup_steps: 25000 #orgin best 6000
