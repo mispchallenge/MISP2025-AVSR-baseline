@@ -83,7 +83,7 @@ fi
 if [ ${stage} -le 2 ] && [ ${stop_stage} -ge 2 ]; then   
   for x in training dev eval; do
     in_video_path=${misp2025_corpus}/${x}_video
-    out_video_path=${misp2025_corpus}/${x}_video_merge_test
+    out_video_path=${misp2025_corpus}/${x}_video_merge
     ${python_path}python local/merge.py ${in_video_path} ${out_video_path}
   done
 fi
@@ -95,7 +95,7 @@ fi
 if [ ${stage} -le 3 ] && [ ${stop_stage} -ge 3 ]; then
   for x in training dev eval; do
     video_input_dir=${misp2025_corpus}/${x}_video_merge
-    video_output_dir=${misp2025_corpus}/${x}_video_cutoff_test
+    video_output_dir=${misp2025_corpus}/${x}_video_cutoff
     timestamp_dir=${misp2025_corpus}/${x}
     ${python_path}python local/wav_cutoff.py ${video_input_dir} ${video_output_dir} ${timestamp_dir}
   done
